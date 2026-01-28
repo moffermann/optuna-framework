@@ -9,7 +9,7 @@ meta:
   prune_adapter: examples.simple_trace.myproj.optuna.prune:TracePruneAdapter
 optuna:
   n_trials: 4
-  n_jobs: 2
+  n_jobs: 3
   storage_url: sqlite:///examples/simple_trace/optuna_trace.db
   sampler: tpe
   timeout_sec: 0
