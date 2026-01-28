@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 import optuna
 
 from optuna_framework.adapters.objective import ObjectiveAdapter, TrialResult
+from optuna_framework.adapters.prune import PruneAdapter
 from optuna_framework.imports import load_object
 
 
@@ -13,11 +14,14 @@ class ObjectiveCallable:
         self,
         search_space: Dict[str, Any],
         adapter_path: Optional[str],
+        prune_adapter_path: Optional[str] = None,
         meta: Optional[Dict[str, Any]] = None,
         project: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.search_space = dict(search_space)
         self.adapter_path = str(adapter_path) if adapter_path else None
+        self.prune_adapter_path = str(prune_adapter_path) if prune_adapter_path else None
+        self._prune_adapter = None
         self.meta = dict(meta or {})
         self.project = dict(project or {})
         self._initialized = False
@@ -39,6 +43,14 @@ class ObjectiveCallable:
         adapter.worker_init()
         adapter.setup()
         self._adapter = adapter
+
+        if self.prune_adapter_path:
+            prune_cls = load_object(self.prune_adapter_path)
+            prune_adapter = prune_cls(self.meta, self.project)
+            if not isinstance(prune_adapter, PruneAdapter):
+                raise TypeError("Prune adapter must inherit from PruneAdapter.")
+            prune_adapter.init()
+            self._prune_adapter = prune_adapter
         self._initialized = True
 
     def __call__(self, trial: optuna.trial.Trial) -> float:
@@ -55,6 +67,9 @@ class ObjectiveCallable:
             reason = "; ".join(errors)
             trial.set_user_attr("prune_reason", reason)
             raise optuna.exceptions.TrialPruned(reason)
+
+        if self._prune_adapter is not None:
+            self._prune_adapter.prune(params, trial)
 
         try:
             self._adapter.on_trial_start(trial, params)
@@ -91,4 +106,6 @@ class ObjectiveCallable:
         if self._adapter is not None:
             self._adapter.teardown()
             self._adapter = None
-            self._initialized = False
+        if self._prune_adapter is not None:
+            self._prune_adapter = None
+        self._initialized = False

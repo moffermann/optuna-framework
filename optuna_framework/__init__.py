@@ -4,6 +4,7 @@
 from optuna_framework.adapters.objective import ObjectiveAdapter, TrialResult
 from optuna_framework.adapters.worker import WorkerAdapter
 from optuna_framework.adapters.master import MasterAdapter
+from optuna_framework.adapters.prune import PruneAdapter
 from optuna_framework.objective import ObjectiveCallable
 from optuna_framework.runner import optimize_study
 from optuna_framework.search_space import (
@@ -20,6 +21,7 @@ __all__ = [
     "TrialResult",
     "WorkerAdapter",
     "MasterAdapter",
+    "PruneAdapter",
     "ObjectiveCallable",
     "optimize_study",
     "build_params_tree",

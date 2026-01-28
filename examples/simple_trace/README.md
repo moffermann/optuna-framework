@@ -8,6 +8,12 @@ This example uses adapters that only print hook events so you can see the full e
 python main.py --params examples/simple_trace/parameters.yaml
 ```
 
+## Files
+- `parameters.yaml`: official run configuration (used by the runner)
+- `search_space.json`: search space reference (same content as the YAML search_space section)
+- `params.json`: deprecated (use `search_space.json`)
+- `myproj/prune.py`: prune adapter used to prune one trial
+
 ## Notes
 - Uses SQLite storage under `examples/simple_trace/optuna_trace.db`.
 - Writes best trial output to `examples/simple_trace/optuna_best.json`.

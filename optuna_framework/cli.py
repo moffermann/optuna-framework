@@ -47,6 +47,11 @@ def main() -> None:
         help="Master adapter class path (e.g. myproj.optuna_master:MyMasterAdapter).",
     )
     parser.add_argument(
+        "--prune-adapter",
+        default=None,
+        help="Prune adapter class path (e.g. myproj.optuna_prune:MyPruneAdapter).",
+    )
+    parser.add_argument(
         "--adapter",
         "-a",
         default=None,
@@ -107,7 +112,13 @@ def main() -> None:
         raise ValueError("Invalid search_space configuration:\n  " + "\n  ".join(errors))
     adapter.teardown()
 
-    objective = ObjectiveCallable(search_space, str(objective_adapter_path), meta=meta, project=project)
+    objective = ObjectiveCallable(
+        search_space,
+        str(objective_adapter_path),
+        meta=meta,
+        project=project,
+        prune_adapter_path=args.prune_adapter or meta.get("prune_adapter"),
+    )
 
     study, best_value, best_params_full, best_params_tree, study_version = optimize_study(
         objective,
