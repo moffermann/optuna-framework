@@ -28,15 +28,23 @@ def is_param_spec_dict(spec: Any) -> bool:
     return isinstance(spec, dict) and ("range" in spec or "choices" in spec)
 
 
-def flatten_spec_tree(tree: Dict[str, Any]) -> Dict[str, Any]:
+def flatten_spec_tree(tree: Dict[str, Any], path: Optional[tuple] = None, seen: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     flat: Dict[str, Any] = {}
+    if path is None:
+        path = tuple()
+    if seen is None:
+        seen = {}
     for key, value in tree.items():
-        if is_param_spec_dict(value):
+        key_path = ".".join(path + (key,)) if path else key
+        if is_param_spec_dict(value) or not isinstance(value, dict):
+            if key in seen:
+                raise ValueError(
+                    f"Duplicate param '{key}' in search_space at '{key_path}' (already defined at '{seen[key]}')."
+                )
+            seen[key] = key_path
             flat[key] = value
-        elif isinstance(value, dict):
-            flat.update(flatten_spec_tree(value))
         else:
-            flat[key] = value
+            flat.update(flatten_spec_tree(value, path + (key,), seen))
     return flat
 
 
