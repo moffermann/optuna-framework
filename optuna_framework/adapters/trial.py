@@ -7,7 +7,7 @@ class TrialAdapter(ABC):
         self.meta = dict(meta or {})
         self.project = dict(project or {})
 
-    def init(self, context: Dict[str, Any]) -> None:
+    def on_trial_start(self, context: Dict[str, Any]) -> None:
         """Hook called before each trial execution."""
 
     def finish(self, context: Dict[str, Any]) -> None:

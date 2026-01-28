@@ -4,8 +4,8 @@ from optuna_framework.adapters.trial import TrialAdapter
 
 
 class TraceTrialAdapter(TrialAdapter):
-    def init(self, context):
-        print('[TRIAL] init', context)
+    def on_trial_start(self, context):
+        print('[TRIAL] start', context)
 
-    def finish(self, context):
-        print('[TRIAL] finish', context)
+    def on_trial_end(self, context):
+        print('[TRIAL] end', context)

@@ -70,9 +70,9 @@ If ObjectiveAdapter is not configured, the runner emits a warning and exits with
 
 ## 3) TrialAdapter and MasterAdapter (execution hooks)
 
-Both share the same interface:
-- `init(context)` runs before each trial (per worker).
-- `finish(context)` runs after each trial.
+TrialAdapter interface:
+- `on_trial_start(context)` runs before each trial.
+- `on_trial_end(context)` runs after each trial.
 
 The `context` includes `role`, `study_name`, `trial_number`, `params`, `user_attrs`, `value`, `state`.
 
@@ -82,11 +82,11 @@ Example (TrialAdapter):
 from optuna_framework.adapters.trial import TrialAdapter
 
 class MyTrialAdapter(TrialAdapter):
-    def init(self, context):
+    def on_trial_start(self, context):
         # Hook before the trial
         pass
 
-    def finish(self, context):
+    def on_trial_end(self, context):
         # Hook after the trial
         pass
 ```

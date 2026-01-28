@@ -163,12 +163,12 @@ def _worker_loop(
 
         if adapter is not None:
             try:
-                adapter.init(_build_context("trial", study_name, trial=trial, phase="init"))
+                adapter.on_trial_start(_build_context("trial", study_name, trial=trial, phase="start"))
             except Exception as exc:
                 error = exc
                 state_name = TrialState.FAIL.name
                 print(
-                    f"[WORKER pid={pid}] trial adapter init failed on trial {trial.number}: {exc}",
+                    f"[WORKER pid={pid}] trial adapter start failed on trial {trial.number}: {exc}",
                     flush=True,
                 )
                 try:
@@ -177,7 +177,7 @@ def _worker_loop(
                     pass
                 study.tell(trial, state=TrialState.FAIL)
                 try:
-                    adapter.finish(
+                    adapter.on_trial_end(
                         _build_context(
                             "trial",
                             study_name,
@@ -185,12 +185,12 @@ def _worker_loop(
                             value=None,
                             state=state_name,
                             error=error,
-                            phase="finish",
+                            phase="end",
                         )
                     )
                 except Exception as finish_exc:
                     print(
-                        f"[WORKER pid={pid}] trial adapter finish error after init failure: {finish_exc}",
+                        f"[WORKER pid={pid}] trial adapter end error after start failure: {finish_exc}",
                         flush=True,
                     )
                 continue
@@ -215,7 +215,7 @@ def _worker_loop(
         finally:
             if adapter is not None:
                 try:
-                    adapter.finish(
+                    adapter.on_trial_end(
                         _build_context(
                             "trial",
                             study_name,
@@ -223,12 +223,12 @@ def _worker_loop(
                             value=value,
                             state=state_name,
                             error=error,
-                            phase="finish",
+                            phase="end",
                         )
                     )
                 except Exception as exc:
                     print(
-                        f"[WORKER pid={pid}] trial adapter finish error on trial {trial.number}: {exc}",
+                        f"[WORKER pid={pid}] trial adapter end error on trial {trial.number}: {exc}",
                         flush=True,
                     )
 
