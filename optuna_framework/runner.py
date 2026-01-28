@@ -222,6 +222,12 @@ def _worker_loop(
                     )
                 )
 
+    if hasattr(objective, "close"):
+        try:
+            objective.close()
+        except Exception as exc:
+            print(f"[WORKER pid={pid}] error during objective teardown: {exc}", flush=True)
+
 
 def format_study_name(meta_name: str, version: Optional[int]) -> str:
     if version is None:
