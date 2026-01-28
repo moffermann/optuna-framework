@@ -66,8 +66,10 @@ def suggest_value(trial: optuna.trial.Trial, name: str, spec: Any) -> Any:
     else:
         step_is_int = True
     if is_int and step_is_int:
+        if ps.get("log", False) and step is not None:
+            raise ValueError(f"Param '{name}' cannot use log with a step for int range.")
         if step is None:
-            return int(trial.suggest_int(name, int(lo), int(hi)))
+            return int(trial.suggest_int(name, int(lo), int(hi), log=bool(ps.get("log", False))))
         return int(trial.suggest_int(name, int(lo), int(hi), step=int(step)))
     return float(
         trial.suggest_float(
