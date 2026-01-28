@@ -5,7 +5,7 @@ meta:
   objective_adapter: examples.simple_trace.myproj.optuna.objective:TraceObjectiveAdapter
   trial_adapter: examples.simple_trace.myproj.optuna.trial:TraceTrialAdapter
   worker_adapter: examples.simple_trace.myproj.optuna.worker:TraceWorkerAdapter
-  master_adapter: examples.simple_trace.myproj.optuna.master:TraceMasterAdapter
+  optuna_adapter: examples.simple_trace.myproj.optuna.optuna:TraceOptunaAdapter
   prune_adapter: examples.simple_trace.myproj.optuna.prune:TracePruneAdapter
 optuna:
   n_trials: 4

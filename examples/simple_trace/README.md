@@ -16,6 +16,7 @@ python main.py --params examples/simple_trace/parameters.yaml
 - `myproj/optuna/worker.py`: worker adapter (process lifecycle)
 - `myproj/optuna/prune.py`: prune adapter used to prune one trial
 - `myproj/optuna/trial.py`: trial adapter for per-trial hooks
+- `myproj/optuna/optuna.py`: optuna adapter (optimization lifecycle)
 
 ## Notes
 - Uses SQLite storage under `examples/simple_trace/optuna_trace.db`.

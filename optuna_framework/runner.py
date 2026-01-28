@@ -9,9 +9,9 @@ import optuna
 from optuna.storages import RDBStorage
 from optuna.trial import TrialState
 
-from optuna_framework.adapters.master import MasterAdapter
 from optuna_framework.adapters.trial import TrialAdapter
 from optuna_framework.adapters.worker import WorkerAdapter
+from optuna_framework.adapters.optuna import OptunaAdapter
 from optuna_framework.imports import load_object
 from optuna_framework.io import save_params
 from optuna_framework.search_space import build_params_tree, normalize_value, resolve_param_value
@@ -304,7 +304,7 @@ def optimize_study(
     project: Optional[Dict[str, Any]] = None,
     trial_adapter_path: Optional[str] = None,
     worker_adapter_path: Optional[str] = None,
-    master_adapter_path: Optional[str] = None,
+    optuna_adapter_path: Optional[str] = None,
 ) -> Tuple[optuna.Study, float, Dict[str, Any], Dict[str, Any], Optional[int]]:
     timeout_sec = int(opt_cfg.get("timeout_sec", 0))
     if timeout_sec <= 0:
@@ -355,9 +355,9 @@ def optimize_study(
     )
 
     project = dict(project or {})
-    master_adapter = _load_run_adapter(master_adapter_path, MasterAdapter, meta, project, "Master")
-    if master_adapter is not None:
-        master_adapter.init(_build_context("master", study_name, phase="init"))
+    optuna_adapter = _load_run_adapter(optuna_adapter_path, OptunaAdapter, meta, project, "Optuna")
+    if optuna_adapter is not None:
+        optuna_adapter.on_optuna_start(_build_context("optuna", study_name, phase="start"))
 
     ctx = mp.get_context("spawn")
     procs = []
@@ -389,18 +389,8 @@ def optimize_study(
 
     study = optuna.load_study(study_name=study_name, storage=storage_engine)
 
-    if master_adapter is not None:
-        for trial in study.trials:
-            ctx = _build_context(
-                "master",
-                study_name,
-                trial=trial,
-                value=trial.value,
-                state=trial.state.name,
-                phase="trial",
-            )
-            master_adapter.execute(ctx)
-            master_adapter.finish(ctx)
+    if optuna_adapter is not None:
+        optuna_adapter.on_optuna_end(_build_context("optuna", study_name, phase="end"))
 
     completed = [t for t in study.trials if t.state == TrialState.COMPLETE]
     if not completed:
