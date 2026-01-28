@@ -47,9 +47,9 @@ def main() -> None:
         help="Worker adapter class path (e.g. myproj.optuna.worker:MyWorkerAdapter).",
     )
     parser.add_argument(
-        "--optuna-adapter",
+        "--optimization-adapter",
         default=None,
-        help="Optuna adapter class path (e.g. myproj.optuna.optuna:MyOptunaAdapter).",
+        help="Optimization adapter class path (e.g. myproj.optuna.optimization:MyOptimizationAdapter).",
     )
     parser.add_argument(
         "--prune-adapter",
@@ -138,7 +138,7 @@ def main() -> None:
         project=project,
         trial_adapter_path=args.trial_adapter or meta.get("trial_adapter"),
         worker_adapter_path=args.worker_adapter or meta.get("worker_adapter"),
-        optuna_adapter_path=args.optuna_adapter or meta.get("optuna_adapter"),
+        optimization_adapter_path=args.optimization_adapter or meta.get("optimization_adapter"),
     )
 
     best = study.best_trial
