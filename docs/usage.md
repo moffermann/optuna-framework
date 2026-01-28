@@ -1,50 +1,51 @@
 # Optuna Framework - Uso
 
-Este framework extrae el runner multiproceso de Optuna y lo hace genérico mediante Adapters.
+Este framework extrae el runner multiproceso de Optuna y lo hace generico mediante Adapters.
 
-## 1) Archivo de parámetros (JSON)
+## 1) Archivo de parametros (YAML)
 
-Formato mínimo:
+Formato minimo:
 
-```json
-{
-  "meta": {
-    "name": "exp001",
-    "seed": 42,
-    "study_version": 1,
-    "objective_adapter": "myproj.optuna_adapter:MyObjectiveAdapter",
-    "worker_adapter": "myproj.optuna_worker:MyWorkerAdapter",
-    "master_adapter": "myproj.optuna_master:MyMasterAdapter"
-  },
-  "optuna": {
-    "n_trials": 100,
-    "n_jobs": 4,
-    "storage_url": "sqlite:///optuna.db",
-    "sampler": "tpe",
-    "timeout_sec": 0,
-    "out_path": "results/optuna_best.json"
-  },
-  "search_space": {
-    "lr": {"range": [1e-4, 1e-2], "log": true},
-    "batch_size": [16, 32, 64],
-    "dropout": [0.0, 0.5]
-  },
-  "project": {
-    "train_csv": "data/train.csv",
-    "target_col": "y"
-  }
-}
+```yaml
+meta:
+  name: exp001
+  seed: 42
+  study_version: 1
+  objective_adapter: myproj.optuna_adapter:MyObjectiveAdapter
+  worker_adapter: myproj.optuna_worker:MyWorkerAdapter
+  master_adapter: myproj.optuna_master:MyMasterAdapter
+
+optuna:
+  n_trials: 100
+  n_jobs: 4
+  storage_url: sqlite:///optuna.db
+  sampler: tpe
+  timeout_sec: 0
+  out_path: results/optuna_best.json
+
+search_space:
+  lr:
+    range: [1e-4, 1e-2]
+    log: true
+  batch_size: [16, 32, 64]
+  dropout: [0.0, 0.5]
+
+project:
+  train_csv: data/train.csv
+  target_col: y
 ```
 
 Notas:
 - `storage_url` es obligatorio para multiproceso (sqlite o postgres).
 - `search_space` soporta `range`, `choices`, listas y valores fijos.
 - `project` es libre para tu proyecto.
+- Tambien se acepta JSON si ya lo tienes.
+- Para YAML necesitas PyYAML (`pip install pyyaml`).
 
-## 2) ObjectiveAdapter (función objetivo)
+## 2) ObjectiveAdapter (funcion objetivo)
 
-El hook principal de la función objetivo es `ObjectiveAdapter.execute(params, trial)`.
-La sugerencia de parámetros se hace automáticamente con `search_space`, vía `suggest_params`.
+El hook principal de la funcion objetivo es `ObjectiveAdapter.execute(params, trial)`.
+La sugerencia de parametros se hace automaticamente con `search_space`, via `suggest_params`.
 
 Ejemplo:
 
@@ -77,7 +78,7 @@ Hooks disponibles en ObjectiveAdapter:
 
 Si no se configura el ObjectiveAdapter, el runner emite un warning y termina con error.
 
-## 3) WorkerAdapter y MasterAdapter (hooks de ejecución)
+## 3) WorkerAdapter y MasterAdapter (hooks de ejecucion)
 
 Ambos comparten la misma interfaz:
 - `init(context)` se ejecuta una vez al inicio.
@@ -100,24 +101,24 @@ class MyWorkerAdapter(WorkerAdapter):
         pass
 
     def finish(self, context):
-        # Hook después del trial
+        # Hook despues del trial
         pass
 ```
 
 ## 4) Ejecutar
 
 ```bash
-python optuna-framework/main.py --params path/to/params.json
+python optuna-framework/main.py --params path/to/parameters.yaml
 ```
 
-Si no quieres guardar el adapter en el JSON:
+Si no quieres guardar el adapter en el YAML:
 
 ```bash
-python optuna-framework/main.py --params path/to/params.json --objective-adapter myproj.optuna_adapter:MyObjectiveAdapter
+python optuna-framework/main.py --params path/to/parameters.yaml --objective-adapter myproj.optuna_adapter:MyObjectiveAdapter
 ```
 
-Opciones útiles:
-- `--trials 50` para pruebas rápidas.
+Opciones utiles:
+- `--trials 50` para pruebas rapidas.
 - `--continue-study` para no auto-incrementar `study_version`.
 - `--worker-adapter` y `--master-adapter` para hooks adicionales.
 

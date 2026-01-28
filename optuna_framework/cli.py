@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from optuna_framework.adapters.objective import ObjectiveAdapter
 from optuna_framework.imports import load_object
-from optuna_framework.io import load_json
+from optuna_framework.io import load_params
 from optuna_framework.objective import ObjectiveCallable
 from optuna_framework.reporting import build_best_payload, write_best_json
 from optuna_framework.runner import optimize_study
@@ -30,7 +30,7 @@ def _resolve_adapter_path(args: argparse.Namespace, meta: Dict[str, Any]) -> str
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Optuna framework runner.")
-    parser.add_argument("--params", "-p", required=True, help="Path to Optuna params JSON.")
+    parser.add_argument("--params", "-p", required=True, help="Path to Optuna params file (JSON/YAML).")
     parser.add_argument(
         "--objective-adapter",
         default=None,
@@ -68,7 +68,7 @@ def main() -> None:
     args = parser.parse_args()
 
     params_path = Path(args.params)
-    payload = load_json(params_path)
+    payload = load_params(params_path)
     meta = _ensure_dict(payload, "meta")
     opt_cfg = _ensure_dict(payload, "optuna")
     project = _ensure_dict(payload, "project") if "project" in payload else {}

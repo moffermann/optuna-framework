@@ -12,7 +12,7 @@ from optuna.trial import TrialState
 from optuna_framework.adapters.master import MasterAdapter
 from optuna_framework.adapters.worker import WorkerAdapter
 from optuna_framework.imports import load_object
-from optuna_framework.io import save_json
+from optuna_framework.io import save_params
 from optuna_framework.search_space import build_params_tree, normalize_value, resolve_param_value
 
 
@@ -269,7 +269,7 @@ def optimize_study(
     if resolved_version is not None and resolved_version != study_version:
         meta["study_version"] = int(resolved_version)
         payload["meta"] = meta
-        save_json(Path(params_path), payload)
+        save_params(Path(params_path), payload)
         study_version = int(resolved_version)
 
     storage_engine = None
