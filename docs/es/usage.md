@@ -11,9 +11,9 @@ meta:
   name: exp001
   seed: 42
   study_version: 1
-  objective_adapter: myproj.optuna_adapter:MyObjectiveAdapter
-  worker_adapter: myproj.optuna_worker:MyWorkerAdapter
-  master_adapter: myproj.optuna_master:MyMasterAdapter
+  objective_adapter: myproj.optuna.adapter:MyObjectiveAdapter
+  worker_adapter: myproj.optuna.worker:MyWorkerAdapter
+  master_adapter: myproj.optuna.master:MyMasterAdapter
 
 optuna:
   n_trials: 100
@@ -114,7 +114,7 @@ python optuna-framework/main.py --params path/to/parameters.yaml
 Si no quieres guardar el adapter en el YAML:
 
 ```bash
-python optuna-framework/main.py --params path/to/parameters.yaml --objective-adapter myproj.optuna_adapter:MyObjectiveAdapter
+python optuna-framework/main.py --params path/to/parameters.yaml --objective-adapter myproj.optuna.adapter:MyObjectiveAdapter
 ```
 
 Opciones útiles:
@@ -133,11 +133,11 @@ Agrega `prune_adapter` en `meta` o pasa `--prune-adapter` para centralizar la po
 
 ```yaml
 meta:
-  prune_adapter: myproj.prune:MyPruneAdapter
+  prune_adapter: myproj.optuna.prune:MyPruneAdapter
 ```
 
 ```bash
-python optuna-framework/main.py --params path/to/parameters.yaml --prune-adapter myproj.prune:MyPruneAdapter
+python optuna-framework/main.py --params path/to/parameters.yaml --prune-adapter myproj.optuna.prune:MyPruneAdapter
 ```
 
 El framework llama al adapter de poda **antes** de `execute()`.
