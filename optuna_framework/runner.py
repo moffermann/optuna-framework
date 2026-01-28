@@ -11,6 +11,7 @@ from optuna.trial import TrialState
 
 from optuna_framework.adapters.master import MasterAdapter
 from optuna_framework.adapters.trial import TrialAdapter
+from optuna_framework.adapters.worker import WorkerAdapter
 from optuna_framework.imports import load_object
 from optuna_framework.io import save_params
 from optuna_framework.search_space import build_params_tree, normalize_value, resolve_param_value
@@ -116,6 +117,7 @@ def _worker_loop(
     n_trials: int,
     engine_kwargs: Dict[str, Any],
     trial_adapter_path: Optional[str],
+    worker_adapter_path: Optional[str],
     meta: Dict[str, Any],
     project: Dict[str, Any],
 ) -> None:
@@ -126,6 +128,12 @@ def _worker_loop(
         flush=True,
     )
     adapter = _load_run_adapter(trial_adapter_path, TrialAdapter, meta, project, "Trial")
+    worker_adapter = _load_run_adapter(worker_adapter_path, WorkerAdapter, meta, project, "Worker")
+    if worker_adapter is not None:
+        try:
+            worker_adapter.on_worker_start(_build_context("worker", study_name, phase="start"))
+        except Exception as exc:
+            print(f"[WORKER pid={pid}] worker adapter start error: {exc}", flush=True)
     t_start = time.time()
     storage = _create_storage(storage_url, engine_kwargs)
     study = optuna.load_study(study_name=study_name, storage=storage)
@@ -232,6 +240,12 @@ def _worker_loop(
                         flush=True,
                     )
 
+    if worker_adapter is not None:
+        try:
+            worker_adapter.on_worker_end(_build_context("worker", study_name, phase="end"))
+        except Exception as exc:
+            print(f"[WORKER pid={pid}] worker adapter end error: {exc}", flush=True)
+
     if hasattr(objective, "close"):
         try:
             objective.close()
@@ -289,6 +303,7 @@ def optimize_study(
     seed: int,
     project: Optional[Dict[str, Any]] = None,
     trial_adapter_path: Optional[str] = None,
+    worker_adapter_path: Optional[str] = None,
     master_adapter_path: Optional[str] = None,
 ) -> Tuple[optuna.Study, float, Dict[str, Any], Dict[str, Any], Optional[int]]:
     timeout_sec = int(opt_cfg.get("timeout_sec", 0))
@@ -357,6 +372,7 @@ def optimize_study(
                 n_trials,
                 engine_kwargs,
                 trial_adapter_path,
+                worker_adapter_path,
                 meta,
                 project,
             ),

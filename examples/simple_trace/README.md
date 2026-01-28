@@ -13,6 +13,7 @@ python main.py --params examples/simple_trace/parameters.yaml
 - `search_space.json`: search space reference (same content as the YAML search_space section)
 - `params.json`: deprecated (use `search_space.json`)
 - `myproj/optuna/objective.py`: objective adapter (execute only)
+- `myproj/optuna/worker.py`: worker adapter (process lifecycle)
 - `myproj/optuna/prune.py`: prune adapter used to prune one trial
 - `myproj/optuna/trial.py`: trial adapter for per-trial hooks
 
