@@ -2,7 +2,7 @@ meta:
   name: trace_demo
   seed: 123
   study_version: 1
-  objective_adapter: examples.simple_trace.myproj.optuna.adapter:TraceObjectiveAdapter
+  objective_adapter: examples.simple_trace.myproj.optuna.objective:TraceObjectiveAdapter
   trial_adapter: examples.simple_trace.myproj.optuna.trial:TraceTrialAdapter
   master_adapter: examples.simple_trace.myproj.optuna.master:TraceMasterAdapter
   prune_adapter: examples.simple_trace.myproj.optuna.prune:TracePruneAdapter

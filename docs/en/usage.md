@@ -11,7 +11,7 @@ meta:
   name: exp001
   seed: 42
   study_version: 1
-  objective_adapter: myproj.optuna.adapter:MyObjectiveAdapter
+  objective_adapter: myproj.optuna.objective:MyObjectiveAdapter
   trial_adapter: myproj.optuna.trial:MyTrialAdapter
   master_adapter: myproj.optuna.master:MyMasterAdapter
 
@@ -53,16 +53,6 @@ Example:
 from optuna_framework.adapters.objective import ObjectiveAdapter, TrialResult
 
 class MyObjectiveAdapter(ObjectiveAdapter):
-    def setup(self):
-        # Load data or base models per worker
-        pass
-
-    def validate_trial_params(self, params):
-        errors = []
-        if params.get("lr", 0) <= 0:
-            errors.append("lr must be > 0")
-        return errors
-
     def execute(self, params, trial):
         # Train/evaluate and return a score (float)
         score = 0.123
@@ -70,19 +60,18 @@ class MyObjectiveAdapter(ObjectiveAdapter):
 ```
 
 Available hooks in ObjectiveAdapter:
-- `worker_init()` and `setup()` / `teardown()`
+- `execute(params, trial)` (required)
 - `suggest_params(trial, search_space)`
 - `validate_search_space(search_space)` and `validate_trial_params(params)`
 - `on_trial_start(trial, params)` / `on_trial_end(trial, value, params)`
-- `execute(params, trial)` (required)
+- `worker_init()` and `setup()` / `teardown()` (optional)
 
 If ObjectiveAdapter is not configured, the runner emits a warning and exits with error.
 
 ## 3) TrialAdapter and MasterAdapter (execution hooks)
 
 Both share the same interface:
-- `init(context)` runs once at the start (per worker or per master).
-- `execute(context)` runs before each trial.
+- `init(context)` runs before each trial (per worker).
 - `finish(context)` runs after each trial.
 
 The `context` includes `role`, `study_name`, `trial_number`, `params`, `user_attrs`, `value`, `state`.
@@ -94,9 +83,6 @@ from optuna_framework.adapters.trial import TrialAdapter
 
 class MyTrialAdapter(TrialAdapter):
     def init(self, context):
-        pass
-
-    def execute(self, context):
         # Hook before the trial
         pass
 
@@ -114,7 +100,7 @@ python optuna-framework/main.py --params path/to/parameters.yaml
 If you don't want to store the adapter in YAML:
 
 ```bash
-python optuna-framework/main.py --params path/to/parameters.yaml --objective-adapter myproj.optuna.adapter:MyObjectiveAdapter
+python optuna-framework/main.py --params path/to/parameters.yaml --objective-adapter myproj.optuna.objective:MyObjectiveAdapter
 ```
 
 Useful options:

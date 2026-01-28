@@ -7,8 +7,5 @@ class TraceTrialAdapter(TrialAdapter):
     def init(self, context):
         print('[TRIAL] init', context)
 
-    def execute(self, context):
-        print('[TRIAL] execute', context)
-
     def finish(self, context):
         print('[TRIAL] finish', context)

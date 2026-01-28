@@ -126,8 +126,6 @@ def _worker_loop(
         flush=True,
     )
     adapter = _load_run_adapter(trial_adapter_path, TrialAdapter, meta, project, "Trial")
-    if adapter is not None:
-        adapter.init(_build_context("trial", study_name, phase="init"))
     t_start = time.time()
     storage = _create_storage(storage_url, engine_kwargs)
     study = optuna.load_study(study_name=study_name, storage=storage)
@@ -165,12 +163,12 @@ def _worker_loop(
 
         if adapter is not None:
             try:
-                adapter.execute(_build_context("trial", study_name, trial=trial, phase="start"))
+                adapter.init(_build_context("trial", study_name, trial=trial, phase="init"))
             except Exception as exc:
                 error = exc
                 state_name = TrialState.FAIL.name
                 print(
-                    f"[WORKER pid={pid}] trial adapter failed on trial {trial.number}: {exc}",
+                    f"[WORKER pid={pid}] trial adapter init failed on trial {trial.number}: {exc}",
                     flush=True,
                 )
                 try:
@@ -178,17 +176,23 @@ def _worker_loop(
                 except Exception:
                     pass
                 study.tell(trial, state=TrialState.FAIL)
-                adapter.finish(
-                    _build_context(
-                        "trial",
-                        study_name,
-                        trial=trial,
-                        value=None,
-                        state=state_name,
-                        error=error,
-                        phase="finish",
+                try:
+                    adapter.finish(
+                        _build_context(
+                            "trial",
+                            study_name,
+                            trial=trial,
+                            value=None,
+                            state=state_name,
+                            error=error,
+                            phase="finish",
+                        )
                     )
-                )
+                except Exception as finish_exc:
+                    print(
+                        f"[WORKER pid={pid}] trial adapter finish error after init failure: {finish_exc}",
+                        flush=True,
+                    )
                 continue
 
         value: Optional[float] = None
@@ -210,17 +214,23 @@ def _worker_loop(
             study.tell(trial, state=TrialState.FAIL)
         finally:
             if adapter is not None:
-                adapter.finish(
-                    _build_context(
-                        "trial",
-                        study_name,
-                        trial=trial,
-                        value=value,
-                        state=state_name,
-                        error=error,
-                        phase="finish",
+                try:
+                    adapter.finish(
+                        _build_context(
+                            "trial",
+                            study_name,
+                            trial=trial,
+                            value=value,
+                            state=state_name,
+                            error=error,
+                            phase="finish",
+                        )
                     )
-                )
+                except Exception as exc:
+                    print(
+                        f"[WORKER pid={pid}] trial adapter finish error on trial {trial.number}: {exc}",
+                        flush=True,
+                    )
 
     if hasattr(objective, "close"):
         try:

@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any, Dict
 
 
@@ -9,11 +9,6 @@ class TrialAdapter(ABC):
 
     def init(self, context: Dict[str, Any]) -> None:
         """Hook called before each trial execution."""
-
-    @abstractmethod
-    def execute(self, context: Dict[str, Any]) -> None:
-        """Hook called during trial execution (before objective)."""
-        raise NotImplementedError
 
     def finish(self, context: Dict[str, Any]) -> None:
         """Hook called after each trial execution."""
