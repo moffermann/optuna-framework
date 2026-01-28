@@ -164,7 +164,32 @@ def _worker_loop(
             break
 
         if adapter is not None:
-            adapter.execute(_build_context("worker", study_name, trial=trial, phase="start"))
+            try:
+                adapter.execute(_build_context("worker", study_name, trial=trial, phase="start"))
+            except Exception as exc:
+                error = exc
+                state_name = TrialState.FAIL.name
+                print(
+                    f"[WORKER pid={pid}] worker adapter failed on trial {trial.number}: {exc}",
+                    flush=True,
+                )
+                try:
+                    trial.set_user_attr("worker_adapter_error", str(exc))
+                except Exception:
+                    pass
+                study.tell(trial, state=TrialState.FAIL)
+                adapter.finish(
+                    _build_context(
+                        "worker",
+                        study_name,
+                        trial=trial,
+                        value=None,
+                        state=state_name,
+                        error=error,
+                        phase="finish",
+                    )
+                )
+                continue
 
         value: Optional[float] = None
         state_name = None
