@@ -12,7 +12,7 @@ meta:
   seed: 42
   study_version: 1
   objective_adapter: myproj.optuna.adapter:MyObjectiveAdapter
-  worker_adapter: myproj.optuna.worker:MyWorkerAdapter
+  trial_adapter: myproj.optuna.trial:MyTrialAdapter
   master_adapter: myproj.optuna.master:MyMasterAdapter
 
 optuna:
@@ -78,21 +78,21 @@ Available hooks in ObjectiveAdapter:
 
 If ObjectiveAdapter is not configured, the runner emits a warning and exits with error.
 
-## 3) WorkerAdapter and MasterAdapter (execution hooks)
+## 3) TrialAdapter and MasterAdapter (execution hooks)
 
 Both share the same interface:
-- `init(context)` runs once at the start.
+- `init(context)` runs once at the start (per worker or per master).
 - `execute(context)` runs before each trial.
 - `finish(context)` runs after each trial.
 
 The `context` includes `role`, `study_name`, `trial_number`, `params`, `user_attrs`, `value`, `state`.
 
-Example (WorkerAdapter):
+Example (TrialAdapter):
 
 ```python
-from optuna_framework.adapters.worker import WorkerAdapter
+from optuna_framework.adapters.trial import TrialAdapter
 
-class MyWorkerAdapter(WorkerAdapter):
+class MyTrialAdapter(TrialAdapter):
     def init(self, context):
         pass
 
@@ -120,7 +120,7 @@ python optuna-framework/main.py --params path/to/parameters.yaml --objective-ada
 Useful options:
 - `--trials 50` for quick runs.
 - `--continue-study` to avoid auto-incrementing `study_version`.
-- `--worker-adapter` and `--master-adapter` for extra hooks.
+- `--trial-adapter` and `--master-adapter` for extra hooks.
 
 ## Result
 

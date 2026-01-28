@@ -37,9 +37,9 @@ def main() -> None:
         help="Objective adapter class path (e.g. myproj.optuna_adapter:MyObjectiveAdapter).",
     )
     parser.add_argument(
-        "--worker-adapter",
+        "--trial-adapter",
         default=None,
-        help="Worker adapter class path (e.g. myproj.optuna_worker:MyWorkerAdapter).",
+        help="Trial adapter class path (e.g. myproj.optuna.trial:MyTrialAdapter).",
     )
     parser.add_argument(
         "--master-adapter",
@@ -131,7 +131,7 @@ def main() -> None:
         args.continue_study,
         seed,
         project=project,
-        worker_adapter_path=args.worker_adapter or meta.get("worker_adapter"),
+        trial_adapter_path=args.trial_adapter or meta.get("trial_adapter"),
         master_adapter_path=args.master_adapter or meta.get("master_adapter"),
     )
 

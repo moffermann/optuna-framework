@@ -1,3 +1,8 @@
-from optuna_framework.adapters.worker import WorkerAdapter as MasterAdapter
+from optuna_framework.adapters.trial import TrialAdapter
+
+
+class MasterAdapter(TrialAdapter):
+    pass
+
 
 __all__ = ["MasterAdapter"]

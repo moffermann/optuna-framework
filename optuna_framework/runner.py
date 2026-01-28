@@ -10,7 +10,7 @@ from optuna.storages import RDBStorage
 from optuna.trial import TrialState
 
 from optuna_framework.adapters.master import MasterAdapter
-from optuna_framework.adapters.worker import WorkerAdapter
+from optuna_framework.adapters.trial import TrialAdapter
 from optuna_framework.imports import load_object
 from optuna_framework.io import save_params
 from optuna_framework.search_space import build_params_tree, normalize_value, resolve_param_value
@@ -115,7 +115,7 @@ def _worker_loop(
     timeout_sec: Optional[int],
     n_trials: int,
     engine_kwargs: Dict[str, Any],
-    worker_adapter_path: Optional[str],
+    trial_adapter_path: Optional[str],
     meta: Dict[str, Any],
     project: Dict[str, Any],
 ) -> None:
@@ -125,9 +125,9 @@ def _worker_loop(
         f"[WORKER] started pid={pid} cuda_visible={os.environ.get('CUDA_VISIBLE_DEVICES','')}",
         flush=True,
     )
-    adapter = _load_run_adapter(worker_adapter_path, WorkerAdapter, meta, project, "Worker")
+    adapter = _load_run_adapter(trial_adapter_path, TrialAdapter, meta, project, "Trial")
     if adapter is not None:
-        adapter.init(_build_context("worker", study_name, phase="init"))
+        adapter.init(_build_context("trial", study_name, phase="init"))
     t_start = time.time()
     storage = _create_storage(storage_url, engine_kwargs)
     study = optuna.load_study(study_name=study_name, storage=storage)
@@ -165,22 +165,22 @@ def _worker_loop(
 
         if adapter is not None:
             try:
-                adapter.execute(_build_context("worker", study_name, trial=trial, phase="start"))
+                adapter.execute(_build_context("trial", study_name, trial=trial, phase="start"))
             except Exception as exc:
                 error = exc
                 state_name = TrialState.FAIL.name
                 print(
-                    f"[WORKER pid={pid}] worker adapter failed on trial {trial.number}: {exc}",
+                    f"[WORKER pid={pid}] trial adapter failed on trial {trial.number}: {exc}",
                     flush=True,
                 )
                 try:
-                    trial.set_user_attr("worker_adapter_error", str(exc))
+                    trial.set_user_attr("trial_adapter_error", str(exc))
                 except Exception:
                     pass
                 study.tell(trial, state=TrialState.FAIL)
                 adapter.finish(
                     _build_context(
-                        "worker",
+                        "trial",
                         study_name,
                         trial=trial,
                         value=None,
@@ -212,7 +212,7 @@ def _worker_loop(
             if adapter is not None:
                 adapter.finish(
                     _build_context(
-                        "worker",
+                        "trial",
                         study_name,
                         trial=trial,
                         value=value,
@@ -278,7 +278,7 @@ def optimize_study(
     continue_study: bool,
     seed: int,
     project: Optional[Dict[str, Any]] = None,
-    worker_adapter_path: Optional[str] = None,
+    trial_adapter_path: Optional[str] = None,
     master_adapter_path: Optional[str] = None,
 ) -> Tuple[optuna.Study, float, Dict[str, Any], Dict[str, Any], Optional[int]]:
     timeout_sec = int(opt_cfg.get("timeout_sec", 0))
@@ -346,7 +346,7 @@ def optimize_study(
                 timeout_sec,
                 n_trials,
                 engine_kwargs,
-                worker_adapter_path,
+                trial_adapter_path,
                 meta,
                 project,
             ),
