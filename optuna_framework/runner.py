@@ -92,10 +92,13 @@ def _build_context(
     state: Optional[str] = None,
     error: Optional[BaseException] = None,
     phase: Optional[str] = None,
+    worker_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     ctx: Dict[str, Any] = {"role": role, "study_name": study_name}
     if phase:
         ctx["phase"] = phase
+    if worker_id is not None:
+        ctx["worker_id"] = int(worker_id)
     if trial is not None:
         ctx["trial_number"] = int(trial.number)
         ctx["params"] = dict(trial.params)
@@ -120,20 +123,23 @@ def _worker_loop(
     worker_adapter_path: Optional[str],
     meta: Dict[str, Any],
     project: Dict[str, Any],
+    worker_id: int,
 ) -> None:
     os.environ["OPTUNA_WORKER_ROLE"] = "worker"
     pid = os.getpid()
     print(
-        f"[WORKER] started pid={pid} cuda_visible={os.environ.get('CUDA_VISIBLE_DEVICES','')}",
+        f"[WORKER {worker_id}] started pid={pid} cuda_visible={os.environ.get('CUDA_VISIBLE_DEVICES','')}",
         flush=True,
     )
     adapter = _load_run_adapter(trial_adapter_path, TrialAdapter, meta, project, "Trial")
     worker_adapter = _load_run_adapter(worker_adapter_path, WorkerAdapter, meta, project, "Worker")
     if worker_adapter is not None:
         try:
-            worker_adapter.on_worker_start(_build_context("worker", study_name, phase="start"))
+            worker_adapter.on_worker_start(
+                _build_context("worker", study_name, phase="start", worker_id=worker_id)
+            )
         except Exception as exc:
-            print(f"[WORKER pid={pid}] worker adapter start error: {exc}", flush=True)
+            print(f"[WORKER {worker_id} pid={pid}] worker adapter start error: {exc}", flush=True)
     t_start = time.time()
     storage = _create_storage(storage_url, engine_kwargs)
     study = optuna.load_study(study_name=study_name, storage=storage)
@@ -143,22 +149,22 @@ def _worker_loop(
 
     while True:
         if timeout_sec is not None and (time.time() - t_start) > float(timeout_sec):
-            print(f"[WORKER pid={pid}] timeout reached, exiting", flush=True)
+            print(f"[WORKER {worker_id} pid={pid}] timeout reached, exiting", flush=True)
             break
         if n_trials > 0:
             try:
                 if len(study.trials) >= int(n_trials):
-                    print(f"[WORKER pid={pid}] n_trials={n_trials} reached, exiting", flush=True)
+                    print(f"[WORKER {worker_id} pid={pid}] n_trials={n_trials} reached, exiting", flush=True)
                     break
                 consecutive_storage_errors = 0
             except Exception as exc:
                 consecutive_storage_errors += 1
                 print(
-                    f"[WORKER pid={pid}] error checking trial count ({consecutive_storage_errors}/{max_storage_errors}): {exc}",
+                    f"[WORKER {worker_id} pid={pid}] error checking trial count ({consecutive_storage_errors}/{max_storage_errors}): {exc}",
                     flush=True,
                 )
                 if consecutive_storage_errors >= max_storage_errors:
-                    print(f"[WORKER pid={pid}] too many storage errors, exiting", flush=True)
+                    print(f"[WORKER {worker_id} pid={pid}] too many storage errors, exiting", flush=True)
                     break
                 time.sleep(0.5)
                 continue
@@ -166,17 +172,25 @@ def _worker_loop(
             trial = study.ask()
             consecutive_storage_errors = 0
         except Exception as exc:
-            print(f"[WORKER pid={pid}] error asking for trial: {exc}", flush=True)
+            print(f"[WORKER {worker_id} pid={pid}] error asking for trial: {exc}", flush=True)
             break
 
         if adapter is not None:
             try:
-                adapter.on_trial_start(_build_context("trial", study_name, trial=trial, phase="start"))
+                adapter.on_trial_start(
+                    _build_context(
+                        "trial",
+                        study_name,
+                        trial=trial,
+                        phase="start",
+                        worker_id=worker_id,
+                    )
+                )
             except Exception as exc:
                 error = exc
                 state_name = TrialState.FAIL.name
                 print(
-                    f"[WORKER pid={pid}] trial adapter start failed on trial {trial.number}: {exc}",
+                    f"[WORKER {worker_id} pid={pid}] trial adapter start failed on trial {trial.number}: {exc}",
                     flush=True,
                 )
                 try:
@@ -194,11 +208,12 @@ def _worker_loop(
                             state=state_name,
                             error=error,
                             phase="end",
+                            worker_id=worker_id,
                         )
                     )
                 except Exception as finish_exc:
                     print(
-                        f"[WORKER pid={pid}] trial adapter end error after start failure: {finish_exc}",
+                        f"[WORKER {worker_id} pid={pid}] trial adapter end error after start failure: {finish_exc}",
                         flush=True,
                     )
                 continue
@@ -213,12 +228,12 @@ def _worker_loop(
         except optuna.exceptions.TrialPruned as exc:
             error = exc
             state_name = TrialState.PRUNED.name
-            print(f"[WORKER pid={pid}] trial {trial.number} pruned", flush=True)
+            print(f"[WORKER {worker_id} pid={pid}] trial {trial.number} pruned", flush=True)
             study.tell(trial, state=TrialState.PRUNED)
         except Exception as exc:
             error = exc
             state_name = TrialState.FAIL.name
-            print(f"[WORKER pid={pid}] trial {trial.number} failed: {exc}", flush=True)
+            print(f"[WORKER {worker_id} pid={pid}] trial {trial.number} failed: {exc}", flush=True)
             study.tell(trial, state=TrialState.FAIL)
         finally:
             if adapter is not None:
@@ -232,25 +247,28 @@ def _worker_loop(
                             state=state_name,
                             error=error,
                             phase="end",
+                            worker_id=worker_id,
                         )
                     )
                 except Exception as exc:
                     print(
-                        f"[WORKER pid={pid}] trial adapter end error on trial {trial.number}: {exc}",
+                        f"[WORKER {worker_id} pid={pid}] trial adapter end error on trial {trial.number}: {exc}",
                         flush=True,
                     )
 
     if worker_adapter is not None:
         try:
-            worker_adapter.on_worker_end(_build_context("worker", study_name, phase="end"))
+            worker_adapter.on_worker_end(
+                _build_context("worker", study_name, phase="end", worker_id=worker_id)
+            )
         except Exception as exc:
-            print(f"[WORKER pid={pid}] worker adapter end error: {exc}", flush=True)
+            print(f"[WORKER {worker_id} pid={pid}] worker adapter end error: {exc}", flush=True)
 
     if hasattr(objective, "close"):
         try:
             objective.close()
         except Exception as exc:
-            print(f"[WORKER pid={pid}] error during objective teardown: {exc}", flush=True)
+            print(f"[WORKER {worker_id} pid={pid}] error during objective teardown: {exc}", flush=True)
 
 
 def format_study_name(meta_name: str, version: Optional[int]) -> str:
@@ -365,7 +383,7 @@ def optimize_study(
 
     ctx = mp.get_context("spawn")
     procs = []
-    for _ in range(n_jobs):
+    for worker_id in range(1, n_jobs + 1):
         p = ctx.Process(
             target=_worker_loop,
             args=(
@@ -379,6 +397,7 @@ def optimize_study(
                 worker_adapter_path,
                 meta,
                 project,
+                worker_id,
             ),
             daemon=False,
         )
